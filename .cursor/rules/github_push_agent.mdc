@@ -1,0 +1,53 @@
+---
+description: 当用户意图进行 GitHub 推送操作时使用
+globs: 
+alwaysApply: false
+---
+# GitHub 代码提交流程自动化规则
+
+## 使用场景
+- 当用户希望执行 `github push` 相关操作，并需要规范化提交流程时。
+- 用于自动化生成初步的提交信息，并引导用户完成后续的提交和分支管理步骤。
+
+## 关键规则
+- **触发**: 当用户意图进行 GitHub 推送操作时（例如，通过特定命令或聊天指令）。
+- **提交信息生成**:
+    - 自动根据当前分支和修改的文件列表生成一个建议的提交信息。
+    - 提交信息应遵循 Conventional Commits 规范（例如，`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`）。
+    - 优先从 `base_github_push.md` 中定义的 `generateCommitMessage` 逻辑生成提交说明。
+- **用户确认**:
+    - 必须向用户展示自动生成的提交信息，并请求用户确认。
+    - 如果用户不满意，应允许用户输入自定义的提交信息。
+- **代码提交**: 使用用户确认或提供的提交信息执行 `git commit`。
+- **分支处理**:
+    - 检查当前分支是否为 `dev`。
+    - 如果当前分支不是 `dev`，询问用户是否需要将当前分支合并到 `dev` 分支。
+    - 如果用户同意合并：
+        1. 切换到 `dev` 分支 (`git checkout dev`)。
+        2. 合并当前工作分支到 `dev` (`git merge <currentBranch>`)。
+        3. 推送 `dev` 分支到远程仓库 (`git push origin dev`)。
+        4. 切换回原来的工作分支 (`git checkout <currentBranch>`)。
+- **原子性**: 尽可能在一个连续的操作流程中完成所有步骤。
+
+## 示例
+<example>
+# 用户触发推送
+用户: "帮我提交代码并推送到 github"
+
+# AI 执行流程
+AI: (检查状态，发现修改了 `README.md` 和 `src/feature.ts`)
+AI: "推荐的提交说明是：'docs: 更新 README.md 和 feat: 更新代码文件'。您同意这个提交说明吗？(yes/no)"
+用户: "yes"
+AI: (执行 `git commit -m "docs: 更新 README.md 和 feat: 更新代码文件"`)
+AI: "当前在 `feature/new-login` 分支。是否需要合并到 `dev` 分支？(yes/no)"
+用户: "yes"
+AI: (执行切换到 `dev`，合并 `feature/new-login`，推送 `dev`，切换回 `feature/new-login` 的操作)
+AI: "代码已提交，`feature/new-login` 分支已合并到 `dev` 分支并已推送。"
+</example>
+
+<example type="invalid">
+# 用户直接要求推送不规范的提交
+用户: "git push my crap"
+AI: "为了保持仓库的整洁，我需要一个更规范的提交信息。请问这次提交的主要内容是什么？或者我可以根据您的代码改动生成一个建议。"
+</example>
+
